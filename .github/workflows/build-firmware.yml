@@ -1,0 +1,40 @@
+
+name: Pocket Soul firmware build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'PocketSoul_V0.1.1_WebFlash_CI/pocket_soul_v01/**'
+      - '.github/workflows/build-firmware.yml'
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build and merge ESP32-S3 firmware
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: release-v5.5
+          target: esp32s3
+          path: PocketSoul_V0.1.1_WebFlash_CI/pocket_soul_v01
+          command: idf.py build && idf.py merge-bin -o build/merged-firmware.bin
+
+      - name: Upload Pocket Soul merged firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: PocketSoul-firmware-${{ github.ref_name }}
+          path: PocketSoul_V0.1.1_WebFlash_CI/pocket_soul_v01/build/merged-firmware.bin
+          if-no-files-found: error
+          retention-days: 30
